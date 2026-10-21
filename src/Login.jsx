@@ -1,4 +1,4 @@
-
+import logo from './assets/retail-inventory-logo.png'
 import { useState } from 'react'
 import {
   createUserWithEmailAndPassword,
@@ -21,9 +21,9 @@ function Login() {
 
     try {
       if (isRegister) {
-        await createUserWithEmailAndPassword(auth, email, password)
+        await createUserWithEmailAndPassword(auth, email.trim(), password)
       } else {
-        await signInWithEmailAndPassword(auth, email, password)
+        await signInWithEmailAndPassword(auth, email.trim(), password)
       }
     } catch (err) {
       const messages = {
@@ -32,6 +32,7 @@ function Login() {
         'auth/weak-password': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
         'auth/invalid-credential': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
         'auth/too-many-requests': 'ลองใหม่อีกครั้งภายหลัง',
+        'auth/network-request-failed': 'เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต',
       }
 
       setError(messages[err.code] || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
@@ -41,59 +42,105 @@ function Login() {
   }
 
   return (
-    <div className="login-page">
+    <main className="login-page">
+      <div className="login-decoration login-decoration-one" />
+      <div className="login-decoration login-decoration-two" />
+
       <form className="login-card" onSubmit={handleSubmit}>
-        <div className="login-brand">▦ Stock<span>Wise</span></div>
-        <h1>{isRegister ? 'สร้างบัญชีผู้ใช้' : 'เข้าสู่ระบบ'}</h1>
-        <p>ระบบบริหารสินค้าคงคลังสำหรับร้านค้าปลีก</p>
-
-        <label>
-          อีเมล
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="name@example.com"
+        <div className="login-brand">
+          <img
+          src={logo}
+          alt="RETAIL INVENTORY"
+          className="login-logo"
           />
-        </label>
+          </div>
 
-        <label>
-          รหัสผ่าน
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="อย่างน้อย 6 ตัวอักษร"
-          />
-        </label>
+        <div className="login-heading">
+          <h1>{isRegister ? 'สร้างบัญชีผู้ใช้' : 'ยินดีต้อนรับกลับ'}</h1>
+          <p>
+            {isRegister
+              ? 'สร้างบัญชีเพื่อเริ่มต้นใช้งานระบบ'
+              : 'เข้าสู่ระบบเพื่อจัดการสินค้าคงคลังของคุณ'}
+          </p>
+        </div>
 
-        {error && <div className="login-error">{error}</div>}
+        <div className="login-fields">
+          <label className="login-field">
+            <span>อีเมล</span>
+            <div className="login-input-wrap">
+              <span className="login-input-icon" aria-hidden="true">@</span>
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@example.com"
+              />
+            </div>
+          </label>
 
-        <button className="primary-button" type="submit" disabled={loading}>
+          <label className="login-field">
+            <span>รหัสผ่าน</span>
+            <div className="login-input-wrap">
+              <span className="login-input-icon" aria-hidden="true">⌑</span>
+              <input
+                type="password"
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                required
+                minLength={6}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="อย่างน้อย 6 ตัวอักษร"
+              />
+            </div>
+          </label>
+        </div>
+
+        {error && (
+          <div className="login-error" role="alert">
+            <span aria-hidden="true">!</span>
+            {error}
+          </div>
+        )}
+
+        <button
+          className="login-submit"
+          type="submit"
+          disabled={loading}
+        >
           {loading
             ? 'กำลังดำเนินการ...'
             : isRegister
-              ? 'สมัครสมาชิก'
+              ? 'สร้างบัญชีผู้ใช้'
               : 'เข้าสู่ระบบ'}
+          {!loading && <span aria-hidden="true">→</span>}
         </button>
 
-        <button
-          className="login-switch"
-          type="button"
-          onClick={() => {
-            setIsRegister(!isRegister)
-            setError('')
-          }}
-        >
-          {isRegister
-            ? 'มีบัญชีแล้ว? เข้าสู่ระบบ'
-            : 'ยังไม่มีบัญชี? สมัครสมาชิก'}
-        </button>
+        <div className="login-divider">
+          <span>หรือ</span>
+        </div>
+
+        <p className="login-switch-text">
+          {isRegister ? 'มีบัญชีอยู่แล้ว?' : 'ยังไม่มีบัญชีใช่ไหม?'}
+          <button
+            className="login-switch"
+            type="button"
+            onClick={() => {
+              setIsRegister(!isRegister)
+              setError('')
+            }}
+          >
+            {isRegister ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
+          </button>
+        </p>
+
+        <div className="login-footer">
+          <span className="login-footer-dot" />
+          ระบบบริหารสินค้าคงคลังสำหรับร้านค้าปลีก
+        </div>
       </form>
-    </div>
+    </main>
   )
 }
 

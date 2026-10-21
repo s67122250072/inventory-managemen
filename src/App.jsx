@@ -1,4 +1,4 @@
-
+import logo from './assets/retail-inventory-logo.png'
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import {
@@ -12,15 +12,14 @@ import { auth, database } from './config/firebase'
 import Login from './Login'
 import './App.css'
 
+
 const menuItems = [
-  { id: 'dashboard', label: 'หน้าหลัก', icon: '▦' },
-  { id: 'products', label: 'จัดการสินค้า', icon: '□' },
+  { id: 'dashboard', label: 'หน้าหลัก', icon: '⌂' },
+  { id: 'products', label: 'จัดการสินค้า', icon: '▣' },
   { id: 'categories', label: 'หมวดหมู่สินค้า', icon: '▤' },
   { id: 'stock', label: 'จัดการสต็อก', icon: '⇅' },
   { id: 'search', label: 'ค้นหาสินค้า', icon: '⌕' },
   { id: 'reports', label: 'รายงาน', icon: '▥' },
-  { id: 'users', label: 'ผู้ใช้งาน', icon: '♙' },
-  { id: 'settings', label: 'ตั้งค่า', icon: '⚙' },
 ]
 
 function App() {
@@ -48,6 +47,7 @@ function App() {
     price: '',
     stock: '',
     unit: 'ชิ้น',
+    imageUrl: '',
   })
 
   // ตรวจสอบสถานะการเข้าสู่ระบบ
@@ -257,6 +257,7 @@ function App() {
         price: '',
         stock: '',
         unit: 'ชิ้น',
+        imageUrl: '',
       })
 
       setShowForm(false)
@@ -381,86 +382,267 @@ function App() {
       )
     }
 
-    // หน้ารายงาน
+    // หน้ารายงานสินค้า
     if (activePage === 'reports') {
+      const categoryReport = categories.map((item) => ({
+        name: item,
+        count: products.filter((p) => p.category === item).length,
+        value: products
+          .filter((p) => p.category === item)
+          .reduce(
+            (sum, p) =>
+              sum + Number(p.price || 0) * Number(p.stock || 0),
+            0
+          ),
+      }))
+
+      const inventoryValue = products.reduce(
+        (sum, p) =>
+          sum + Number(p.price || 0) * Number(p.stock || 0),
+        0
+      )
+
       return (
         <>
-          <div className="page-heading">
+          <div className="page-heading report-heading">
             <div>
-              <h2>รายงานสินค้า</h2>
-              <p>สรุปข้อมูลสินค้าคงคลังเบื้องต้น</p>
+              <h2>รายงานสินค้าคงคลัง</h2>
+              <p>ภาพรวมจำนวนสินค้า สถานะสต็อก และมูลค่าสินค้าภายในร้าน</p>
             </div>
           </div>
 
-          <div className="stats-grid">
-            <StatCard
-              icon="▦"
-              label="สินค้าทั้งหมด"
-              value={`${products.length} รายการ`}
-            />
-            <StatCard
-              icon="!"
-              label="สินค้าใกล้หมด"
-              value={`${lowStock.length} รายการ`}
-            />
-            <StatCard
-              icon="฿"
-              label="มูลค่าสินค้ารวม"
-              value={`฿${totalValue.toLocaleString()}`}
-            />
-          </div>
+          {loading ? (
+            <div className="panel">
+              <div className="empty-state">กำลังโหลดรายงาน...</div>
+            </div>
+          ) : firebaseError ? (
+            <div className="panel">
+              <div className="empty-state">{firebaseError}</div>
+            </div>
+          ) : (
+            <>
+              <div className="stats-grid report-stats">
+                <StatCard
+                  icon="▦"
+                  label="สินค้าทั้งหมด"
+                  value={`${products.length} รายการ`}
+                />
+                <StatCard
+                  icon="!"
+                  label="สินค้าใกล้หมด"
+                  value={`${lowStock.length} รายการ`}
+                  warning={lowStock.length > 0}
+                />
+                <StatCard
+                  icon="฿"
+                  label="มูลค่าสินค้าคงคลัง"
+                  value={`฿${inventoryValue.toLocaleString('th-TH', {
+                    maximumFractionDigits: 2,
+                  })}`}
+                />
+                <StatCard
+                  icon="▤"
+                  label="หมวดหมู่สินค้า"
+                  value={`${categories.length} หมวดหมู่`}
+                />
+              </div>
 
-          <div className="panel">
-            <h3>จำนวนสินค้าแยกตามหมวดหมู่</h3>
-            {categories.length === 0 ? (
-              <div className="empty-state">ยังไม่มีข้อมูลสินค้า</div>
-            ) : (
-              categories.map((item) => (
-                <div className="report-row" key={item}>
-                  <span>{item}</span>
-                  <strong>
-                    {products.filter((p) => p.category === item).length}{' '}
-                    รายการ
-                  </strong>
+              <div className="report-layout">
+                <section className="panel report-panel">
+                  <div className="report-section-heading">
+                    <div>
+                      <h3>สินค้าแยกตามหมวดหมู่</h3>
+                      <p>เปรียบเทียบจำนวนสินค้าในแต่ละหมวดหมู่</p>
+                    </div>
+                  </div>
+
+                  {categoryReport.length === 0 ? (
+                    <div className="empty-state">
+                      ยังไม่มีข้อมูลหมวดหมู่สินค้า
+                    </div>
+                  ) : (
+                    <div className="report-category-list">
+                      {categoryReport.map((item) => {
+                        const percent =
+                          products.length > 0
+                            ? (item.count / products.length) * 100
+                            : 0
+
+                        return (
+                          <div className="report-category" key={item.name}>
+                            <div className="report-category-top">
+                              <strong>{item.name}</strong>
+                              <span>{item.count} รายการ</span>
+                            </div>
+                            <div className="report-progress">
+                              <div
+                                className="report-progress-fill"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <div className="report-category-value">
+                              มูลค่าสินค้า ฿
+                              {item.value.toLocaleString('th-TH', {
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <section className="panel report-panel">
+                  <div className="report-section-heading">
+                    <div>
+                      <h3>สถานะสินค้าคงเหลือ</h3>
+                      <p>ตรวจสอบสินค้าที่ควรเติมสต็อก</p>
+                    </div>
+                  </div>
+
+                  <div className="report-status-summary">
+                    <div className="report-status-row">
+                      <span className="report-status-dot normal-dot" />
+                      <span>สต็อกปกติ</span>
+                      <strong>
+                        {
+                          products.filter((p) => Number(p.stock) > 10)
+                            .length
+                        }
+                      </strong>
+                    </div>
+                    <div className="report-status-row">
+                      <span className="report-status-dot low-dot" />
+                      <span>สินค้าใกล้หมด</span>
+                      <strong>
+                        {
+                          products.filter(
+                            (p) =>
+                              Number(p.stock) > 5 &&
+                              Number(p.stock) <= 10
+                          ).length
+                        }
+                      </strong>
+                    </div>
+                    <div className="report-status-row">
+                      <span className="report-status-dot out-dot" />
+                      <span>สินค้าเหลือน้อยมาก</span>
+                      <strong>
+                        {
+                          products.filter((p) => Number(p.stock) <= 5)
+                            .length
+                        }
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="report-tip">
+                    <strong>ควรตรวจสอบ</strong>
+                    <p>
+                      {lowStock.length > 0
+                        ? `มีสินค้า ${lowStock.length} รายการที่มีจำนวนคงเหลือไม่เกิน 10 หน่วย`
+                        : 'ขณะนี้ยังไม่มีสินค้าที่เข้าเกณฑ์สินค้าใกล้หมด'}
+                    </p>
+                    <button
+                      type="button"
+                      className="report-text-button"
+                      onClick={() => setActivePage('stock')}
+                    >
+                      ไปหน้าจัดการสต็อก →
+                    </button>
+                  </div>
+                </section>
+              </div>
+
+              <section className="panel report-panel report-table-panel">
+                <div className="report-section-heading">
+                  <div>
+                    <h3>รายการสินค้าใกล้หมด</h3>
+                    <p>สินค้าที่มีจำนวนคงเหลือไม่เกิน 10 หน่วย</p>
+                  </div>
+                  <span className="report-count">
+                    {lowStock.length} รายการ
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
+
+                <ProductTable
+                  products={lowStock}
+                  onEdit={handleEditProduct}
+                  onDelete={handleDeleteProduct}
+                />
+              </section>
+
+              <section className="panel report-panel report-table-panel">
+                <div className="report-section-heading">
+                  <div>
+                    <h3>มูลค่าสินค้าตามรายการ</h3>
+                    <p>คำนวณจากราคาต่อหน่วยคูณจำนวนคงเหลือ</p>
+                  </div>
+                </div>
+
+                {products.length === 0 ? (
+                  <div className="empty-state">ยังไม่มีข้อมูลสินค้า</div>
+                ) : (
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>รหัสสินค้า</th>
+                          <th>ชื่อสินค้า</th>
+                          <th>หมวดหมู่</th>
+                          <th>ราคาต่อหน่วย</th>
+                          <th>จำนวนคงเหลือ</th>
+                          <th>มูลค่ารวม</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...products]
+                          .sort(
+                            (a, b) =>
+                              Number(b.price || 0) * Number(b.stock || 0) -
+                              Number(a.price || 0) * Number(a.stock || 0)
+                          )
+                          .map((product) => (
+                            <tr key={product.id}>
+                              <td className="product-id">{product.id}</td>
+                              <td className="product-name">{product.name}</td>
+                              <td>
+                                <span className="category-tag">
+                                  {product.category}
+                                </span>
+                              </td>
+                              <td>
+                                ฿
+                                {Number(product.price || 0).toLocaleString(
+                                  'th-TH'
+                                )}
+                              </td>
+                              <td>
+                                {product.stock} {product.unit}
+                              </td>
+                              <td className="report-total-value">
+                                ฿
+                                {(
+                                  Number(product.price || 0) *
+                                  Number(product.stock || 0)
+                                ).toLocaleString('th-TH', {
+                                  maximumFractionDigits: 2,
+                                })}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </>
       )
     }
-
-    // หน้าตั้งค่า
-    if (activePage === 'settings') {
-      return (
-        <div className="panel">
-          <h2>ตั้งค่าระบบ</h2>
-          <p>ระบบบริหารสินค้าคงคลังสำหรับร้านค้าปลีก</p>
-          <p>เวอร์ชันต้นแบบสำหรับการพัฒนาและทดสอบ</p>
-        </div>
-      )
-    }
-
-    // หน้าผู้ใช้งาน
-    if (activePage === 'users') {
-      return (
-        <div className="panel">
-          <h2>จัดการผู้ใช้งาน</h2>
-          <p>
-            ส่วนนี้เตรียมไว้สำหรับจัดการบัญชีผู้ใช้และสิทธิ์การเข้าถึงระบบ
-          </p>
-          <div className="user-row">
-            <span className="avatar">A</span>
-            <div>
-              <strong>{user?.email || 'ผู้ดูแลระบบ'}</strong>
-              <p>Administrator</p>
-            </div>
-            <span className="status-pill">ใช้งาน</span>
-          </div>
-        </div>
-      )
-    }
-
+    
     // หน้าจัดการสต็อก
     if (activePage === 'stock') {
       return (
@@ -602,6 +784,74 @@ function App() {
       )
     }
 
+    // หน้าจัดการผู้ใช้งาน
+    if (activePage === 'users') {
+      return (
+        <>
+          <div className="page-heading">
+            <div>
+              <h2>จัดการผู้ใช้งาน</h2>
+              <p>ข้อมูลบัญชีที่เข้าสู่ระบบในปัจจุบัน</p>
+            </div>
+          </div>
+
+          <section className="panel">
+            <h3>ข้อมูลผู้ใช้งาน</h3>
+            <div className="user-info-grid">
+              <div className="user-info-item">
+                <span className="user-info-label">อีเมล</span>
+                <strong>{user?.email || 'ไม่พบอีเมลผู้ใช้งาน'}</strong>
+              </div>
+              <div className="user-info-item">
+                <span className="user-info-label">สถานะบัญชี</span>
+                <strong>เข้าสู่ระบบแล้ว</strong>
+              </div>
+              <div className="user-info-item">
+                <span className="user-info-label">รหัสผู้ใช้งาน</span>
+                <strong>{user?.uid || '-'}</strong>
+              </div>
+            </div>
+          </section>
+        </>
+      )
+    }
+
+    // หน้าตั้งค่าระบบ
+    if (activePage === 'settings') {
+      return (
+        <>
+          <div className="page-heading">
+            <div>
+              <h2>ตั้งค่าระบบ</h2>
+              <p>ข้อมูลทั่วไปและสถานะการเชื่อมต่อของระบบ</p>
+            </div>
+          </div>
+
+          <section className="panel">
+            <h3>ข้อมูลระบบ</h3>
+            <div className="user-info-grid">
+              <div className="user-info-item">
+                <span className="user-info-label">ชื่อระบบ</span>
+                <strong>RETAIL INVENTORY</strong>
+              </div>
+              <div className="user-info-item">
+                <span className="user-info-label">ประเภทระบบ</span>
+                <strong>ระบบบริหารสินค้าคงคลังสำหรับร้านค้าปลีก</strong>
+              </div>
+              <div className="user-info-item">
+                <span className="user-info-label">บัญชีที่ใช้งาน</span>
+                <strong>{user?.email || '-'}</strong>
+              </div>
+              <div className="user-info-item">
+                <span className="user-info-label">ข้อมูลสินค้า</span>
+                <strong>{loading ? 'กำลังตรวจสอบ...' : firebaseError ? 'ตรวจสอบการเชื่อมต่อ' : 'โหลดข้อมูลแล้ว'}</strong>
+              </div>
+            </div>
+          </section>
+        </>
+      )
+    }
+
     // หน้าหลัก หน้าจัดการสินค้า และหน้าค้นหาสินค้า
     const isDashboard = activePage === 'dashboard'
     const isSearch = activePage === 'search'
@@ -677,6 +927,18 @@ function App() {
                     setForm({ ...form, name: e.target.value })
                   }
                   placeholder="กรอกชื่อสินค้า"
+                />
+              </label>
+
+              <label>
+                URL รูปภาพสินค้า
+                <input
+                  type="url"
+                  value={form.imageUrl}
+                  onChange={(e) =>
+                    setForm({ ...form, imageUrl: e.target.value })
+                  }
+                  placeholder="https://example.com/product.jpg"
                 />
               </label>
 
@@ -848,14 +1110,17 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-icon">▦</span>
-          <div>
-            <strong>
-              Stock<span>Wise</span>
-            </strong>
-            <small>INVENTORY SYSTEM</small>
+          <img
+          src={logo}
+          alt="Retail Inventory"
+          className="sidebar-logo"
+          />
+          <div className="brand-text">
+            <strong>RETAIL</strong>
+            <strong>INVENTORY</strong>
+            <small>INVENTORY MANAGEMENT</small>
+            </div>
           </div>
-        </div>
 
         <div className="store-label">เมนูหลัก</div>
 
@@ -863,13 +1128,10 @@ function App() {
           {menuItems.map((item) => (
             <button
               key={item.id}
-              className={`nav-item ${
-                activePage === item.id ? 'active' : ''
-              }`}
+              className={`nav-item ${activePage === item.id ? 'active' : ''}`}
               onClick={() => {
                 setActivePage(item.id)
                 setShowForm(false)
-
                 if (item.id !== 'products' && item.id !== 'search') {
                   setSearch('')
                   setCategory('ทั้งหมด')
@@ -887,10 +1149,9 @@ function App() {
 
         <div className="sidebar-bottom">
           <div className="sidebar-help">
-            <span>ⓘ</span>
             <div>
-              <strong>Inventory System</strong>
-              <small>ระบบจัดการสินค้าคงคลัง</small>
+              <strong>RETAIL INVENTORY</strong>
+              <small>ระบบบริหารสินค้าคงคลังสำหรับร้านค้าปลีก</small>
             </div>
           </div>
 
@@ -898,27 +1159,10 @@ function App() {
             <span className="avatar">
               {(user.email || 'A').charAt(0).toUpperCase()}
             </span>
-
-            <div>
+            <div className="profile-info">
               <strong>{user.email || 'ผู้ใช้งาน'}</strong>
               <small>ผู้ใช้งานระบบ</small>
             </div>
-
-            <button
-              type="button"
-              className="profile-more"
-              title="ออกจากระบบ"
-              onClick={async () => {
-                try {
-                  await signOut(auth)
-                } catch (error) {
-                  console.error('Logout error:', error)
-                  window.alert('ออกจากระบบไม่สำเร็จ')
-                }
-              }}
-            >
-              ออก
-            </button>
           </div>
         </div>
       </aside>
@@ -928,8 +1172,7 @@ function App() {
           <div className="breadcrumb">
             ระบบจัดการ <span>/</span>
             <strong>
-              {menuItems.find((item) => item.id === activePage)?.label ||
-                'หน้าหลัก'}
+              {menuItems.find((item) => item.id === activePage)?.label || 'หน้าหลัก'}
             </strong>
           </div>
 
@@ -944,12 +1187,25 @@ function App() {
             <span className="top-avatar">
               {(user.email || 'A').charAt(0).toUpperCase()}
             </span>
+            <button
+              type="button"
+              className="logout-button"
+              onClick={async () => {
+                try {
+                  await signOut(auth)
+                } catch (error) {
+                  console.error('Logout error:', error)
+                  window.alert('ออกจากระบบไม่สำเร็จ')
+                }
+              }}
+            >
+              ออกจากระบบ
+            </button>
           </div>
         </header>
 
         <div className="content-area">{renderContent()}</div>
-
-        <footer>© 2026 StockWise Inventory Management System</footer>
+        <footer>© 2026 RETAIL INVENTORY</footer>
       </main>
     </div>
   )
@@ -968,6 +1224,16 @@ function StatCard({ icon, label, value, detail, warning }) {
   )
 }
 
+function getProductImage(product) {
+  const number = String(product.id || '').match(/\d+/)?.[0]
+
+  if (!number) return null
+
+  const imageNumber = number.padStart(3, '0')
+
+  return `/images/p${imageNumber}.webp`
+}
+
 function ProductTable({ products, onEdit, onDelete }) {
   if (products.length === 0) {
     return <div className="empty-state">ไม่พบข้อมูลสินค้า</div>
@@ -978,6 +1244,7 @@ function ProductTable({ products, onEdit, onDelete }) {
       <table>
         <thead>
           <tr>
+            <th>รูปภาพ</th>
             <th>รหัสสินค้า</th>
             <th>ชื่อสินค้า</th>
             <th>หมวดหมู่</th>
@@ -990,6 +1257,21 @@ function ProductTable({ products, onEdit, onDelete }) {
         <tbody>
           {products.map((product) => (
             <tr key={product.id}>
+              <td>
+                {getProductImage(product) ? (
+                  <img
+                    src={getProductImage(product)}
+                    alt={product.name || 'รูปสินค้า'}
+                    className="product-thumbnail"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <span className="product-no-image">ไม่มีรูป</span>
+                )}
+              </td>
               <td className="product-id">{product.id}</td>
               <td className="product-name">{product.name}</td>
               <td>
