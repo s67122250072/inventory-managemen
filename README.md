@@ -1,16 +1,68 @@
-# React + Vite
+# FraudAware – รู้ทันภัยออนไลน์
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+โครงงานวิชาการพัฒนาเว็บแอปพลิเคชัน (CSD3202) มหาวิทยาลัยราชภัฏสวนสุนันทา
 
-Currently, two official plugins are available:
+- **จัดทำโดย**:
+  - 67122250025 นายณัฐพล มนูเนตร์
+  - 67122250072 นางสาวลภัสรดา อยู่เมฆะ
+- **อาจารย์ผู้สอน**: ผศ.ดร.เสถียร จันทร์ปลา
+- **เว็บที่ deploy แล้ว**: https://ruthanphai.web.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 1. วัตถุประสงค์และขอบเขตของโครงงาน (Project Overview)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. เพื่อพัฒนาเว็บแอปพลิเคชันตรวจสอบความเสี่ยงกลโกงออนไลน์ (เบอร์โทร, เลข/ชื่อบัญชี, ลิงก์) พร้อมระบบเตือนภัยและรับแจ้งเบาะแส
+2. เพื่อทดสอบการทำงานและความสามารถในการใช้งาน (Usability) ตามหลักการ HCI
+3. เพื่อศึกษาแนวทางการใช้แอปพลิเคชันเพื่อสร้างความตระหนักรู้และลดความเสี่ยงการตกเป็นเหยื่อ
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 2. เทคโนโลยีที่ใช้ (Tech Stack)
+
+- **Frontend**: React 19 + JavaScript (ES Modules, JSX) พัฒนาด้วย Vite
+- **Routing**: ตัวจัดการเส้นทางที่เขียนเอง (`src/lib/router.jsx`)
+- **Database**: Firebase Realtime Database
+- **Authentication**: Firebase Authentication (อีเมล/รหัสผ่าน และ Google)
+- **Hosting**: Firebase Hosting
+- **Design**: Custom CSS, ฟอนต์ Noto Sans Thai
+
+---
+
+## 3. หน้าจอและเส้นทางระบบ (Pages & Routes)
+
+| เส้นทาง | บทบาท | หน้าที่ |
+|---|---|---|
+| `/` | ทุกคน | หน้าแรก ค้นหาตรวจสอบความเสี่ยง และข่าวล่าสุด |
+| `/check` | ทุกคน | ตรวจสอบความเสี่ยงของเบอร์/ลิงก์/บัญชี |
+| `/report` | ผู้ใช้ที่ล็อกอิน | แจ้งเบาะแสกลโกง |
+| `/scams`, `/scam/:id` | ทุกคน | ข่าวเตือนภัยและรายละเอียด |
+| `/favorites` | ผู้ใช้ที่ล็อกอิน | รายการโปรดของฉัน |
+| `/help` | ทุกคน | ศูนย์ช่วยเหลือ เบอร์ฉุกเฉิน |
+| `/login` | ทุกคน | เข้าสู่ระบบ |
+| `/admin` | ผู้ดูแลระบบ | แดชบอร์ด เพิ่มข่าว ดูเบาะแสที่ได้รับ |
+
+---
+
+## 4. บัญชีทดสอบระบบ (Test Accounts)
+
+   - **ผู้ใช้ทั่วไป**: user@example.com / รหัสผ่านที่ตั้งไว้
+   - **ผู้ดูแลระบบ**: admin@example.com / รหัสผ่านที่ตั้งไว้
+
+---
+
+## 5. คำสั่งติดตั้งและเริ่มใช้งาน (Installation & Commands)
+
+```bash
+# ติดตั้งแพ็กเกจ
+npm install
+
+# รันเซิร์ฟเวอร์สำหรับพัฒนา (http://localhost:5173)
+npm run dev
+
+# Build สำหรับ production
+npm run build
+
+# อัปขึ้นเว็บ
+firebase deploy --only hosting
+```
